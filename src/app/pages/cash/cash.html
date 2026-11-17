@@ -1,0 +1,198 @@
+<div class="page">
+  <div class="page-head">
+    <h1>Caja</h1>
+    @if (cash.current(); as c) {
+      <span class="chip chip-success"><span class="dot"></span> Abierta desde las {{ c.session.openedAt | date: 'HH:mm' }} · {{ c.session.openedByName }}</span>
+      <button type="button" class="btn btn-primary" data-tour="cash-close" (click)="startClose()"><app-icon name="lock" [size]="18" /> Cerrar caja</button>
+    } @else if (cash.loaded()) {
+      <span class="chip chip-danger">Cerrada</span>
+    }
+  </div>
+
+  @if (!cash.loaded()) {
+    <div class="card empty">Cargando…</div>
+  } @else if (cash.current(); as c) {
+    <div class="stats">
+      <div class="card stat">
+        <div class="stat-label">Fondo inicial</div>
+        <div class="stat-value">{{ c.session.openingAmount | money }}</div>
+      </div>
+      <div class="card stat">
+        <div class="stat-label">Ventas del turno ({{ c.salesCount }})</div>
+        <div class="stat-value">{{ c.salesTotal | money }}</div>
+      </div>
+      <div class="card stat highlight" data-tour="cash-expected">
+        <div class="stat-label">Efectivo que debería haber</div>
+        <div class="stat-value">{{ c.expectedCash | money }}</div>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="card card-pad stack">
+        <h2>Por medio de pago</h2>
+        @for (m of c.byMethod; track m.name) {
+          <div class="kv">
+            <span>{{ m.name }}</span><strong class="num">{{ m.total | money }}</strong>
+          </div>
+        } @empty {
+          <p class="muted">Todavía no hay ventas en este turno.</p>
+        }
+        <hr />
+        <h2>Efectivo</h2>
+        <div class="kv"><span>Fondo inicial</span><span class="num">{{ c.session.openingAmount | money }}</span></div>
+        <div class="kv">
+          <span>Ventas en efectivo</span>
+          <span class="num">{{ cashSales() | money }}</span>
+        </div>
+        <div class="kv"><span>Cobros de fiado en efectivo</span><span class="num">{{ c.accountPaymentsCash | money }}</span></div>
+        <div class="kv"><span>Ingresos</span><span class="num success-text">{{ c.incomes | money }}</span></div>
+        <div class="kv"><span>Gastos</span><span class="num danger-text">−{{ c.expenses | money }}</span></div>
+        <div class="kv"><span>Retiros</span><span class="num danger-text">−{{ c.withdrawals | money }}</span></div>
+        <div class="kv total"><span>Esperado en caja</span><strong class="num">{{ c.expectedCash | money }}</strong></div>
+      </div>
+
+      <div class="card card-pad stack">
+        <div class="row wrap" data-tour="cash-movements">
+          <h2 class="grow">Movimientos del turno</h2>
+          @for (t of movementTypes; track t) {
+            <button type="button" class="btn btn-sm" (click)="startMovement(t)">
+              <app-icon [name]="MOVEMENT[t].icon" [size]="16" /> {{ MOVEMENT[t].label }}
+            </button>
+          }
+        </div>
+        @for (m of c.movements; track m.id) {
+          <div class="movement">
+            <span class="chip" [class.chip-success]="m.type === 'INCOME'" [class.chip-danger]="m.type !== 'INCOME'">{{ MOVEMENT[m.type].label }}</span>
+            <span class="grow">{{ m.reason }}</span>
+            <span class="muted small">{{ m.createdAt | date: 'HH:mm' }}</span>
+            <strong class="num" [class.success-text]="m.type === 'INCOME'" [class.danger-text]="m.type !== 'INCOME'">
+              {{ m.type === 'INCOME' ? '+' : '−' }}{{ m.amount | money }}
+            </strong>
+          </div>
+        } @empty {
+          <p class="muted">Sin ingresos, gastos ni retiros. Registralos acá para que el arqueo cierre justo.</p>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="card open-card" data-tour="cash-open-page">
+      <span class="big-emoji">🔒</span>
+      <h2>La caja está cerrada</h2>
+      <p class="muted">Contá el cambio con el que arrancás y abrí la caja para empezar a vender.</p>
+      <form class="stack" (ngSubmit)="open()">
+        <div class="field">
+          <label for="opening">Fondo inicial (cambio)</label>
+          <input appNumber id="opening" name="opening" class="input input-lg input-money" inputmode="decimal" placeholder="$ 0" [(ngModel)]="openingRaw" autocomplete="off" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" [disabled]="busy()">Abrir caja</button>
+      </form>
+    </div>
+  }
+
+  <div class="card">
+    <div class="card-pad"><h2>Cajas anteriores</h2></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Apertura</th>
+            <th>Cierre</th>
+            <th>Cajero</th>
+            <th class="right">Esperado</th>
+            <th class="right">Contado</th>
+            <th class="right">Diferencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of history(); track s.id) {
+            <tr>
+              <td>{{ s.openedAt | date: 'dd/MM HH:mm' }}</td>
+              <td>{{ s.closedAt | date: 'dd/MM HH:mm' }}</td>
+              <td>{{ s.closedByName ?? s.openedByName }}</td>
+              <td class="right num">{{ s.expectedCash | money }}</td>
+              <td class="right num">{{ s.countedCash | money }}</td>
+              <td class="right">
+                @if (!s.difference) {
+                  <span class="chip chip-success">Justo</span>
+                } @else {
+                  <span class="chip num" [class.chip-success]="s.difference > 0" [class.chip-danger]="s.difference < 0">
+                    {{ s.difference > 0 ? 'Sobran ' : 'Faltan ' }}{{ (s.difference < 0 ? -s.difference : s.difference) | money }}
+                  </span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty">Todavía no cerraste ninguna caja.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (movementType(); as t) {
+  <app-modal [title]="MOVEMENT[t].title" [width]="420" (closed)="movementType.set(null)">
+    <form id="mov-form" class="stack" (ngSubmit)="saveMovement()">
+      <div class="field">
+        <label for="mov-amount">Monto</label>
+        <input appNumber id="mov-amount" name="amount" class="input input-lg input-money" inputmode="decimal" placeholder="$ 0" [(ngModel)]="movementAmount" autofocus autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="mov-reason">Motivo</label>
+        <input id="mov-reason" name="reason" class="input" [placeholder]="MOVEMENT[t].hint" [(ngModel)]="movementReason" autocomplete="off" />
+      </div>
+    </form>
+    <div modal-footer>
+      <button type="button" class="btn" (click)="movementType.set(null)">Cancelar</button>
+      <button type="submit" form="mov-form" class="btn btn-primary" [disabled]="busy()">Registrar</button>
+    </div>
+  </app-modal>
+}
+
+@if (closing() && cash.current(); as c) {
+  <app-modal title="Cerrar caja" [width]="460" (closed)="cancelClose()">
+    <form id="close-form" class="stack" (ngSubmit)="confirmClose()">
+      <div class="kv big"><span>Debería haber en efectivo</span><strong class="num">{{ c.expectedCash | money }}</strong></div>
+      <div class="field">
+        <label for="counted">¿Cuánto efectivo contaste?</label>
+        <input appNumber id="counted" name="counted" class="input input-lg input-money" inputmode="decimal" placeholder="$ 0" [ngModel]="countedRaw()" (ngModelChange)="countedRaw.set($event)" autofocus autocomplete="off" />
+      </div>
+      @if (difference(); as d) {
+        <div class="diff" [class.ok]="d > 0" [class.bad]="d < 0">
+          <span>{{ d > 0 ? 'Sobran' : 'Faltan' }}</span>
+          <strong class="num">{{ (d < 0 ? -d : d) | money }}</strong>
+        </div>
+      } @else if (difference() === 0) {
+        <div class="diff ok"><span>¡Caja justa!</span><strong>👌</strong></div>
+      }
+      <div class="field">
+        <label for="notes">Notas (opcional)</label>
+        <input id="notes" name="notes" class="input" placeholder="Ej.: faltante por vuelto mal dado" [(ngModel)]="closeNotes" autocomplete="off" />
+      </div>
+    </form>
+    <div modal-footer>
+      <button type="button" class="btn" (click)="cancelClose()">Cancelar</button>
+      <button type="submit" form="close-form" class="btn btn-primary" [disabled]="busy()">Cerrar caja</button>
+    </div>
+  </app-modal>
+}
+
+@if (closedSummary(); as s) {
+  <app-modal title="Caja cerrada" [width]="420" (closed)="finishClose()">
+    <div class="stack">
+      <div class="kv"><span>Ventas ({{ s.salesCount }})</span><strong class="num">{{ s.salesTotal | money }}</strong></div>
+      <div class="kv"><span>Esperado</span><span class="num">{{ s.session.expectedCash | money }}</span></div>
+      <div class="kv"><span>Contado</span><span class="num">{{ s.session.countedCash | money }}</span></div>
+      <div class="kv big">
+        <span>Diferencia</span>
+        <strong class="num" [class.success-text]="(s.session.difference ?? 0) >= 0" [class.danger-text]="(s.session.difference ?? 0) < 0">{{ s.session.difference | money }}</strong>
+      </div>
+    </div>
+    <div modal-footer>
+      <button type="button" class="btn" (click)="printClose(s)"><app-icon name="printer" [size]="18" /> Imprimir cierre</button>
+      <button type="button" class="btn btn-primary" (click)="finishClose()">{{ exitAfterClose() ? 'Listo, salir' : 'Listo' }}</button>
+    </div>
+  </app-modal>
+}

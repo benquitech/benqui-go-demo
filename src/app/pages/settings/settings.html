@@ -1,0 +1,193 @@
+<div class="page">
+  <div class="page-head">
+    <h1>Ajustes</h1>
+  </div>
+
+  <form class="stack" (ngSubmit)="saveSettings()">
+    <section class="card card-pad stack">
+      <div class="section-head">
+        <h2>Tu negocio</h2>
+        <p class="muted small">Estos datos salen en el ticket.</p>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="s-name">Nombre *</label>
+          <input id="s-name" name="name" class="input" [(ngModel)]="form.name" required />
+        </div>
+        <div class="field">
+          <label for="s-phone">Teléfono</label>
+          <input id="s-phone" name="phone" class="input" [(ngModel)]="form.phone" inputmode="tel" />
+        </div>
+        <div class="field">
+          <label for="s-addr">Dirección</label>
+          <input id="s-addr" name="address" class="input" [(ngModel)]="form.address" />
+        </div>
+        <div class="field">
+          <label for="s-cuit">CUIT</label>
+          <input appNumber plain id="s-cuit" name="cuit" class="input" [(ngModel)]="form.cuit" inputmode="numeric" placeholder="Opcional" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="s-footer">Mensaje al pie del ticket</label>
+        <input id="s-footer" name="footer" class="input" [(ngModel)]="form.ticketFooter" placeholder="¡Gracias por tu compra!" />
+      </div>
+    </section>
+
+    <section class="card card-pad stack">
+      <div class="section-head">
+        <h2>Ticket y ventas</h2>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <span class="label">Ancho del papel</span>
+          <div class="segmented" role="radiogroup" aria-label="Ancho del papel">
+            <button type="button" [class.active]="form.ticketWidth === 58" (click)="form.ticketWidth = 58">58 mm</button>
+            <button type="button" [class.active]="form.ticketWidth === 80" (click)="form.ticketWidth = 80">80 mm</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">Imprimir ticket</span>
+          <div class="segmented" role="radiogroup" aria-label="Imprimir ticket">
+            <button type="button" [class.active]="form.printTicket === 'ALWAYS'" (click)="form.printTicket = 'ALWAYS'">Siempre</button>
+            <button type="button" [class.active]="form.printTicket === 'ASK'" (click)="form.printTicket = 'ASK'">Preguntar</button>
+            <button type="button" [class.active]="form.printTicket === 'NEVER'" (click)="form.printTicket = 'NEVER'">Nunca</button>
+          </div>
+        </div>
+      </div>
+      <label class="check">
+        <input type="checkbox" name="neg" [(ngModel)]="form.allowNegativeStock" />
+        <span>Permitir vender sin stock <span class="muted small">(recomendado: no frena una venta si el stock está mal cargado)</span></span>
+      </label>
+      <label class="check">
+        <input type="checkbox" name="cash" [(ngModel)]="form.requireCashSession" />
+        <span>Exigir caja abierta para vender <span class="muted small">(así el arqueo siempre cierra)</span></span>
+      </label>
+    </section>
+
+    <div class="row end">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()"><app-icon name="check" [size]="18" /> Guardar cambios</button>
+    </div>
+  </form>
+
+  <section class="card">
+    <div class="card-pad section-head">
+      <h2>Medios de pago</h2>
+      <p class="muted small">Activá los que usás. El recargo se suma solo al cobrar (ej. crédito +10%).</p>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Medio</th>
+            <th class="right">Recargo</th>
+            <th class="right">Activo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of catalog.paymentMethods(); track m.id) {
+            <tr [class.off]="!m.isActive">
+              <td>
+                <strong>{{ m.name }}</strong>
+                @if (m.kind === 'ACCOUNT') {
+                  <div class="small muted">Anota la venta en la cuenta del cliente</div>
+                }
+              </td>
+              <td class="right">
+                <div class="pct">
+                  <input appNumber class="input input-money" inputmode="decimal" [value]="m.surchargePercent" (change)="setSurcharge(m, $any($event.target).value)" [attr.aria-label]="'Recargo de ' + m.name" />
+                  <span>%</span>
+                </div>
+              </td>
+              <td class="right">
+                <button type="button" class="switch" role="switch" [attr.aria-checked]="m.isActive" [class.on]="m.isActive" (click)="toggleMethod(m)" [attr.aria-label]="(m.isActive ? 'Desactivar ' : 'Activar ') + m.name">
+                  <span></span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-pad row">
+      <div class="section-head grow">
+        <h2>Categorías</h2>
+        <p class="muted small">Son las pestañas de la pantalla de venta. El emoji y el color identifican a los productos sin foto.</p>
+      </div>
+      <button type="button" class="btn" (click)="newCategory()"><app-icon name="plus" [size]="18" /> Nueva</button>
+    </div>
+    <div class="cats">
+      @for (c of catalog.categories(); track c.id) {
+        <button type="button" class="cat" [style.--c]="c.color" [class.off]="!c.isActive" (click)="editCategory(c)">
+          <span class="cat-icon">{{ c.icon }}</span>
+          <span class="grow">
+            <strong>{{ c.name }}</strong>
+            <span class="small muted block">{{ productCount(c) }} producto{{ productCount(c) === 1 ? '' : 's' }}{{ c.isActive ? '' : ' · oculta' }}</span>
+          </span>
+          <app-icon name="edit" [size]="16" class="muted" />
+        </button>
+      } @empty {
+        <div class="empty">Todavía no hay categorías.</div>
+      }
+    </div>
+  </section>
+
+  @if (demo) {
+    <section class="card card-pad demo">
+      <div class="grow">
+        <h2>Modo demo</h2>
+        <p class="muted small">
+          Estás usando la demo: los datos (productos, ventas, caja y fiado) se guardan solo en este navegador. Podés probar todo sin miedo y volver a
+          empezar cuando quieras.
+        </p>
+      </div>
+      <button type="button" class="btn btn-danger" (click)="resetDemo()"><app-icon name="refresh" [size]="18" /> Reiniciar datos de ejemplo</button>
+    </section>
+  }
+</div>
+
+@if (editingCat(); as e) {
+  <app-modal [title]="e.id ? 'Editar categoría' : 'Nueva categoría'" [width]="500" (closed)="editingCat.set(null)">
+    <form id="cat-form" class="stack" (ngSubmit)="saveCategory()">
+      <div class="preview" [style.--c]="catForm.color">
+        <span class="cat-icon big">{{ catForm.icon || '📦' }}</span>
+        <strong>{{ catForm.name || 'Nombre de la categoría' }}</strong>
+      </div>
+      <div class="field">
+        <label for="cat-name">Nombre *</label>
+        <input id="cat-name" name="name" class="input" [(ngModel)]="catForm.name" autofocus required />
+      </div>
+      <div class="field">
+        <span class="label">Emoji</span>
+        <div class="emoji-grid">
+          @for (em of emojis; track em) {
+            <button type="button" class="emoji" [class.active]="catForm.icon === em" (click)="catForm.icon = em" [attr.aria-label]="'Usar ' + em">{{ em }}</button>
+          }
+        </div>
+        <input name="icon" class="input emoji-input" [(ngModel)]="catForm.icon" maxlength="8" aria-label="Otro emoji" placeholder="O pegá otro" />
+      </div>
+      <div class="field">
+        <span class="label">Color</span>
+        <div class="colors">
+          @for (col of colors; track col) {
+            <button type="button" class="swatch" [style.background]="col" [class.active]="catForm.color === col" (click)="catForm.color = col" [attr.aria-label]="'Color ' + col"></button>
+          }
+          <input type="color" name="color" class="color-input" [(ngModel)]="catForm.color" aria-label="Otro color" />
+        </div>
+      </div>
+      <label class="check">
+        <input type="checkbox" name="active" [(ngModel)]="catForm.isActive" />
+        <span>Mostrar en la pantalla de venta</span>
+      </label>
+    </form>
+    <div modal-footer>
+      @if (e.id) {
+        <button type="button" class="btn btn-danger footer-left" (click)="deleteEditing(e.id)"><app-icon name="trash" [size]="16" /> Borrar</button>
+      }
+      <button type="button" class="btn" (click)="editingCat.set(null)">Cancelar</button>
+      <button type="submit" form="cat-form" class="btn btn-primary">Guardar</button>
+    </div>
+  </app-modal>
+}

@@ -1,0 +1,216 @@
+:host {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.rail {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  width: var(--rail-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px 10px;
+  background:
+    radial-gradient(120px 160px at 50% 0%, rgba(0, 212, 255, 0.14), transparent 70%),
+    var(--navy-950);
+  border-right: 1px solid rgba(0, 212, 255, 0.12);
+  z-index: 10;
+}
+
+.brand {
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  transition: transform 0.2s;
+  &:hover {
+    transform: rotate(-6deg) scale(1.04);
+  }
+}
+
+.demo-pill {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--navy-950);
+  background: var(--cyan);
+  padding: 1px 7px;
+  border-radius: 999px;
+  cursor: help;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  // Lugar para la burbuja de stock bajo, que sobresale del ícono.
+  padding-top: 6px;
+  width: 100%;
+  min-height: 0;
+  // Si la pantalla es muy baja se puede desplazar, pero sin barras: nunca scroll horizontal.
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  padding: 7px 4px 6px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  color: #8ea3bd;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  .label {
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  &:hover {
+    color: #f0f6ff;
+    background: var(--navy-800);
+  }
+  &.active {
+    color: var(--cyan);
+    background: rgba(0, 212, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.25);
+  }
+  &.small {
+    padding: 4px;
+    .label {
+      font-size: 0.66rem;
+    }
+  }
+  &:focus-visible {
+    outline: 2px solid var(--cyan);
+  }
+}
+
+.icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f87171;
+  box-shadow: 0 0 0 2px var(--navy-950);
+  &.open {
+    background: #4ade80;
+  }
+}
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -12px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: var(--navy-950);
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--navy-950);
+}
+
+.bottom {
+  margin-top: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--cyan);
+  background: var(--navy-800);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  cursor: default;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+// Pantallas bajas (notebooks de 768 px o menos): los botones de abajo solo con ícono.
+@media (max-height: 760px) and (min-width: 721px) {
+  .demo-pill,
+  .avatar {
+    display: none;
+  }
+  .item.small .label {
+    display: none;
+  }
+  .item.small {
+    padding: 6px 4px;
+  }
+}
+
+// Celular: el riel pasa a ser una barra inferior.
+@media (max-width: 720px) {
+  :host {
+    flex-direction: column;
+  }
+  .rail {
+    order: 2;
+    position: sticky;
+    top: auto;
+    bottom: 0;
+    height: auto;
+    width: 100%;
+    flex-direction: row;
+    padding: 4px 6px;
+    border-right: 0;
+    border-top: 1px solid rgba(0, 212, 255, 0.12);
+  }
+  .brand,
+  .demo-pill,
+  .avatar {
+    display: none;
+  }
+  .items {
+    flex-direction: row;
+    margin: 0;
+    overflow-x: auto;
+  }
+  .item {
+    min-width: 64px;
+  }
+  .bottom {
+    flex-direction: row;
+    width: auto;
+    margin: 0;
+  }
+}

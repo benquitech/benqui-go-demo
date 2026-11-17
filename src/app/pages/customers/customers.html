@@ -1,0 +1,229 @@
+<div class="page">
+  <div class="page-head">
+    <h1>Fiado</h1>
+    <button type="button" class="btn btn-primary" data-tour="customers-new" (click)="openNew()"><app-icon name="plus" [size]="18" /> Nuevo cliente</button>
+  </div>
+
+  <div class="stats">
+    <div class="card stat" data-tour="debt-total">
+      <div class="stat-label">Te deben en total</div>
+      <div class="stat-value" [class.warn]="totalDebt() > 0">{{ totalDebt() | money }}</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-label">Clientes con deuda</div>
+      <div class="stat-value">{{ debtors() }}</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-label">Clientes</div>
+      <div class="stat-value">{{ all().length }}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="search-box grow">
+        <app-icon name="search" [size]="18" />
+        <input class="input" type="search" placeholder="Buscar por nombre, teléfono o DNI" [ngModel]="query()" (ngModelChange)="query.set($event)" aria-label="Buscar cliente" />
+      </div>
+      <div class="segmented" role="group" aria-label="Ordenar">
+        <button type="button" [class.active]="sortBy() === 'debt'" (click)="sortBy.set('debt')">Más deuda</button>
+        <button type="button" [class.active]="sortBy() === 'name'" (click)="sortBy.set('name')">A-Z</button>
+      </div>
+    </div>
+    <div class="table-wrap" data-tour="customers-list">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Teléfono</th>
+            <th class="right">Debe</th>
+            <th class="right">Límite</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of visible(); track c.id) {
+            <tr class="clickable" (click)="openDetail(c)">
+              <td>
+                <strong>{{ c.name }}</strong>
+                @if (c.notes) {
+                  <div class="small muted">{{ c.notes }}</div>
+                }
+              </td>
+              <td class="muted">{{ c.phone || '—' }}</td>
+              <td class="right">
+                @switch (limitState(c)) {
+                  @case ('over') {
+                    <span class="chip chip-danger num" title="Supera el límite">{{ c.balance | money }}</span>
+                  }
+                  @case ('debt') {
+                    <span class="chip chip-warn num">{{ c.balance | money }}</span>
+                  }
+                  @default {
+                    <span class="muted num">{{ c.balance < -0.009 ? (c.balance | money) + ' a favor' : 'Al día' }}</span>
+                  }
+                }
+              </td>
+              <td class="right num muted">{{ c.creditLimit != null ? (c.creditLimit | money) : 'Sin límite' }}</td>
+              <td class="right">
+                <button type="button" class="btn btn-ghost btn-icon btn-sm" (click)="$event.stopPropagation(); openEdit(c)" [attr.aria-label]="'Editar ' + c.name">
+                  <app-icon name="edit" [size]="16" />
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">
+                <div class="empty">
+                  <div class="empty-icon">📒</div>
+                  @if (query()) {
+                    No encontramos clientes con “{{ query() }}”.
+                  } @else {
+                    Todavía no cargaste clientes. Creá uno para empezar a anotar el fiado.
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (editing(); as e) {
+  <app-modal [title]="e.id ? 'Editar cliente' : 'Nuevo cliente'" [width]="520" (closed)="editing.set(null)">
+    <form id="cust-form" class="stack" (ngSubmit)="save()">
+      <div class="field">
+        <label for="c-name">Nombre *</label>
+        <input id="c-name" name="name" class="input" [(ngModel)]="form.name" placeholder="Como lo conocés: “Marta del 3° B”" autofocus required />
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="c-phone">Teléfono</label>
+          <input id="c-phone" name="phone" class="input" [(ngModel)]="form.phone" inputmode="tel" placeholder="387 512-3344" />
+          <span class="hint">Para mandarle recordatorios por WhatsApp</span>
+        </div>
+        <div class="field">
+          <label for="c-doc">DNI / CUIT</label>
+          <input appNumber plain id="c-doc" name="doc" class="input" [(ngModel)]="form.document" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="c-addr">Dirección</label>
+        <input id="c-addr" name="addr" class="input" [(ngModel)]="form.address" />
+      </div>
+      <div class="field">
+        <label for="c-limit">Límite de fiado ($)</label>
+        <input appNumber id="c-limit" name="limit" class="input input-money" inputmode="decimal" [(ngModel)]="form.creditLimit" placeholder="Sin límite" />
+        <span class="hint">Si lo dejás vacío, se le puede fiar sin tope.</span>
+      </div>
+      <div class="field">
+        <label for="c-notes">Notas</label>
+        <textarea id="c-notes" name="notes" class="input" rows="2" [(ngModel)]="form.notes" placeholder="Ej: paga los viernes"></textarea>
+      </div>
+    </form>
+    <div modal-footer>
+      @if (e.id) {
+        <button type="button" class="btn btn-danger footer-left" (click)="removeEditing(e.id)">
+          <app-icon name="trash" [size]="16" /> Borrar
+        </button>
+      }
+      <button type="button" class="btn" (click)="editing.set(null)">Cancelar</button>
+      <button type="submit" form="cust-form" class="btn btn-primary" [disabled]="saving()">Guardar</button>
+    </div>
+  </app-modal>
+}
+
+@if (detail(); as c) {
+  <app-modal [title]="c.name" [width]="640" (closed)="detail.set(null)">
+    <div class="stack">
+      <div class="debt-box" [class.clear]="c.balance <= 0.009">
+        <span>{{ c.balance > 0.009 ? 'Debe' : c.balance < -0.009 ? 'Tiene a favor' : 'Está al día' }}</span>
+        <strong class="num">{{ (c.balance < 0 ? -c.balance : c.balance) | money }}</strong>
+        <span class="small">
+          {{ c.creditLimit != null ? 'Límite de fiado: ' + (c.creditLimit | money) : 'Sin límite de fiado' }}
+          @if (c.phone) {
+            · Tel. {{ c.phone }}
+          }
+        </span>
+      </div>
+
+      <div class="row wrap">
+        <button type="button" class="btn btn-success" (click)="startPayment()" [disabled]="paying()"><app-icon name="cash" [size]="18" /> Registrar pago</button>
+        @if (c.balance > 0.009 && whatsappUrl(c); as wa) {
+          <a class="btn" [href]="wa" target="_blank" rel="noopener"><span aria-hidden="true">💬</span> Recordar por WhatsApp</a>
+        }
+        <span class="grow"></span>
+        <button type="button" class="btn btn-ghost" (click)="openEdit(c)"><app-icon name="edit" [size]="16" /> Editar</button>
+      </div>
+
+      @if (paying()) {
+        <form class="pay card card-pad stack" (ngSubmit)="registerPayment()">
+          <div class="grid-2">
+            <div class="field">
+              <label for="p-amount">¿Cuánto paga?</label>
+              <div class="row">
+                <input appNumber id="p-amount" name="amount" class="input input-lg input-money grow" inputmode="decimal" [(ngModel)]="payAmount" placeholder="$ 0" autofocus autocomplete="off" />
+                @if (c.balance > 0.009) {
+                  <button type="button" class="btn" (click)="payAll()">Paga todo</button>
+                }
+              </div>
+            </div>
+            <div class="field">
+              <label for="p-method">Con qué paga</label>
+              <select id="p-method" name="method" class="input input-lg" [(ngModel)]="payMethodId">
+                @for (m of payMethods(); track m.id) {
+                  <option [value]="m.id">{{ m.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="p-notes">Nota (opcional)</label>
+            <input id="p-notes" name="notes" class="input" [(ngModel)]="payNotes" />
+          </div>
+          <div class="row end">
+            <button type="button" class="btn" (click)="paying.set(false)">Cancelar</button>
+            <button type="submit" class="btn btn-success" [disabled]="saving()"><app-icon name="check" [size]="18" /> Confirmar pago</button>
+          </div>
+        </form>
+      }
+
+      <h3>Movimientos</h3>
+      <div class="table-wrap moves">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Detalle</th>
+              <th class="right">Importe</th>
+              <th class="right">Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of movements(); track m.id) {
+              <tr>
+                <td class="muted small">{{ m.createdAt | date: 'dd/MM/yy HH:mm' }}</td>
+                <td>
+                  {{ movementLabel(m) }}
+                  @if (m.notes) {
+                    <div class="small muted">{{ m.notes }}</div>
+                  }
+                </td>
+                <td class="right num" [class.success-text]="m.amount < 0" [class.danger-text]="m.amount > 0">
+                  {{ m.amount > 0 ? '+' : '' }}{{ m.amount | money }}
+                </td>
+                <td class="right num">{{ m.balanceAfter | money }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="muted center">Sin movimientos todavía.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </app-modal>
+}

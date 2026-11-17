@@ -1,0 +1,98 @@
+<app-modal title="Cobrar" [width]="620" (closed)="cancel.emit()">
+  <form id="pay-form" class="stack" (ngSubmit)="submit()">
+    <div class="total-box">
+      <span>Total a cobrar</span>
+      <strong class="num">{{ grandTotal() | money }}</strong>
+      @if (surcharge()) {
+        <span class="small">Incluye recargo {{ surcharge() | money }}</span>
+      }
+    </div>
+
+    @if (single(); as line) {
+      <div class="methods" role="radiogroup" aria-label="Medio de pago">
+        @for (m of methods(); track m.id) {
+          <button type="button" class="method" role="radio" [attr.aria-checked]="line.methodId === m.id" [class.active]="line.methodId === m.id" (click)="selectMethod(m)">
+            <app-icon [name]="kindIcon[m.kind]" [size]="22" />
+            <span>{{ m.name }}</span>
+            @if (m.surchargePercent) {
+              <span class="tag">+{{ m.surchargePercent }}%</span>
+            }
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="split stack">
+        @for (l of lines(); track $index; let i = $index) {
+          <div class="split-line">
+            <select class="input" [ngModel]="l.methodId" (ngModelChange)="setLine(i, { methodId: $event })" [name]="'m' + i" aria-label="Medio de pago">
+              @for (m of methods(); track m.id) {
+                <option [value]="m.id">{{ m.name }}{{ m.surchargePercent ? ' (+' + m.surchargePercent + '%)' : '' }}</option>
+              }
+            </select>
+            <input appNumber class="input input-money" inputmode="decimal" [name]="'a' + i" [ngModel]="l.amount || ''" (ngModelChange)="setLineAmount(i, $event)" placeholder="0" aria-label="Importe" />
+            <button type="button" class="btn btn-sm" (click)="fillLine(i)" [disabled]="remaining() <= 0" title="Completar con lo que falta">Resto</button>
+            <button type="button" class="btn btn-ghost btn-icon btn-sm" (click)="removeLine(i)" [disabled]="lines().length <= 2" aria-label="Quitar"><app-icon name="x" [size]="16" /></button>
+          </div>
+        }
+        <div class="row">
+          <button type="button" class="btn btn-sm" (click)="addLine()"><app-icon name="plus" [size]="16" /> Otro medio</button>
+          <span class="grow"></span>
+          <span [class.danger-text]="remaining() !== 0" class="num">Falta asignar: {{ remaining() | money }}</span>
+        </div>
+      </div>
+    }
+
+    <button type="button" class="link" (click)="toggleSplit()">
+      {{ split() ? 'Cobrar con un solo medio' : '¿Paga con dos medios? Dividir el pago' }}
+    </button>
+
+    @if (hasCash()) {
+      <div class="cash">
+        <div class="field grow">
+          <label for="received">Paga con</label>
+          <input appNumber id="received" name="received" class="input input-lg input-money" inputmode="decimal" [ngModel]="receivedRaw()" (ngModelChange)="receivedRaw.set($event)" [placeholder]="(cashDue() | money) + ' (justo)'" autofocus autocomplete="off" />
+          <div class="bills">
+            <button type="button" class="btn btn-sm" (click)="receivedRaw.set('')">Justo</button>
+            @for (b of bills(); track b) {
+              <button type="button" class="btn btn-sm num" (click)="receivedRaw.set('' + b)">{{ b | money }}</button>
+            }
+          </div>
+        </div>
+        <div class="change" [class.bad]="change() < 0">
+          <span>Vuelto</span>
+          <strong class="num">{{ (change() < 0 ? 0 : change()) | money }}</strong>
+        </div>
+      </div>
+    }
+
+    @if (needsCustomer()) {
+      <div class="stack">
+        @if (customer(); as c) {
+          <div class="picked">
+            <app-icon name="book" [size]="20" />
+            <div class="grow">
+              <strong>{{ c.name }}</strong>
+              <div class="small muted num">
+                Debe {{ c.balance | money }}{{ c.creditLimit != null ? ' · Límite ' + (c.creditLimit | money) : '' }}
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm" (click)="customer.set(null)">Cambiar</button>
+          </div>
+        } @else {
+          <span class="label">¿A quién se le fía?</span>
+          <app-customer-picker (picked)="customer.set($event)" />
+        }
+      </div>
+    }
+  </form>
+
+  <div modal-footer>
+    @if (error(); as e) {
+      <span class="footer-error"><app-icon name="alert" [size]="16" /> {{ e }}</span>
+    }
+    <button type="button" class="btn" (click)="cancel.emit()">Volver</button>
+    <button type="submit" form="pay-form" class="btn btn-success btn-lg" [disabled]="!!error() || busy()">
+      <app-icon name="check" /> Confirmar <kbd>Enter</kbd>
+    </button>
+  </div>
+</app-modal>

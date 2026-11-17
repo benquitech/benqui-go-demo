@@ -1,0 +1,151 @@
+<div class="page">
+  <div class="page-head">
+    <h1>Reportes</h1>
+    <div class="day-picker">
+      <button type="button" class="btn btn-icon" (click)="shift(-1)" aria-label="Día anterior"><app-icon name="chevron" class="flip" [size]="18" /></button>
+      <input type="date" class="input" [ngModel]="date()" (ngModelChange)="setDate($event)" aria-label="Día" />
+      <button type="button" class="btn btn-icon" (click)="shift(1)" [disabled]="isToday()" aria-label="Día siguiente"><app-icon name="chevron" [size]="18" /></button>
+      <button type="button" class="btn" (click)="goToday()" [disabled]="isToday()">Hoy</button>
+    </div>
+  </div>
+  <p class="muted day-label">{{ dateObj() | date: "EEEE d 'de' MMMM 'de' y" }}</p>
+
+  @if (report(); as r) {
+    <div class="stats">
+      <div class="card stat">
+        <div class="stat-label">Total vendido</div>
+        <div class="stat-value">{{ r.total | money }}</div>
+      </div>
+      <div class="card stat">
+        <div class="stat-label">Ventas</div>
+        <div class="stat-value">{{ r.salesCount }}</div>
+      </div>
+      <div class="card stat">
+        <div class="stat-label">Ticket promedio</div>
+        <div class="stat-value">{{ r.averageTicket | money }}</div>
+      </div>
+      <div class="card stat">
+        <div class="stat-label">Ganancia estimada</div>
+        <div class="stat-value success-text">{{ r.estimatedProfit | money }}</div>
+        <div class="small muted">Según el costo cargado de cada producto</div>
+      </div>
+    </div>
+
+    @if (!r.salesCount) {
+      <div class="card empty">
+        <div class="empty-icon">🌙</div>
+        No hubo ventas este día. Probá con otro día con las flechas.
+      </div>
+    } @else {
+      <div class="card card-pad">
+        <h2>Ventas por hora</h2>
+        <div class="hours" role="img" aria-label="Ventas por hora">
+          @for (h of hours(); track h.hour) {
+            <div class="hour" [title]="h.hour + ' h: ' + (h.total | money)">
+              <div class="bar-wrap">
+                @if (h.total) {
+                  <span class="bar-val num">{{ h.total / 1000 | number: '1.0-0' }}k</span>
+                }
+                <div class="vbar" [style.height.%]="h.pct"></div>
+              </div>
+              <span class="hour-label">{{ h.hour }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card card-pad">
+          <h2>Por medio de pago</h2>
+          <div class="hbars">
+            @for (m of r.byMethod; track m.name; let i = $index) {
+              <div class="hrow">
+                <span class="hlabel">{{ m.name }}</span>
+                <div class="htrack"><div class="hbar" [style.width.%]="(m.total / maxMethod()) * 100" [style.background]="methodColors[i % methodColors.length]"></div></div>
+                <span class="hval num">{{ m.total | money }}</span>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h2>Por categoría</h2>
+          <div class="hbars">
+            @for (c of r.byCategory; track c.name) {
+              <div class="hrow">
+                <span class="hlabel">{{ c.name }}</span>
+                <div class="htrack"><div class="hbar" [style.width.%]="(c.total / maxCategory()) * 100" [style.background]="c.color"></div></div>
+                <span class="hval num">{{ c.total | money }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-pad"><h2>Lo más vendido</h2></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th class="right">Cantidad</th>
+                <th class="right">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of r.topProducts; track p.description; let i = $index) {
+                <tr>
+                  <td class="muted">{{ i + 1 }}</td>
+                  <td>{{ p.description }}</td>
+                  <td class="right num">{{ p.quantity | qty }}</td>
+                  <td class="right num"><strong>{{ p.total | money }}</strong></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  } @else {
+    <div class="card empty">Cargando…</div>
+  }
+
+  <div class="card">
+    <div class="card-pad row">
+      <h2 class="grow">Para reponer</h2>
+      @if (lowStock().length) {
+        <span class="chip chip-warn">{{ lowStock().length }} producto{{ lowStock().length === 1 ? '' : 's' }}</span>
+      }
+    </div>
+    @if (lowStock().length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="right">Stock</th>
+              <th class="right">Mínimo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of lowStock(); track p.id) {
+              <tr>
+                <td>
+                  <div class="row">
+                    <app-product-thumb [product]="p" [category]="catalog.category(p.categoryId)" [size]="32" />
+                    {{ p.name }}
+                  </div>
+                </td>
+                <td class="right num" [class.danger-text]="p.stock <= 0">{{ p.stock | qty: p.saleUnit }}</td>
+                <td class="right num muted">{{ p.minStock! | qty: p.saleUnit }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="empty"><div class="empty-icon">✅</div>Todo el stock está por encima del mínimo.</div>
+    }
+  </div>
+</div>

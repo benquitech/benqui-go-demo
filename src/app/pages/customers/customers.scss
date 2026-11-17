@@ -1,0 +1,71 @@
+.stat-value.warn {
+  color: var(--warn);
+}
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.search-box {
+  position: relative;
+  min-width: 220px;
+  app-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+  }
+  .input {
+    padding-left: 38px;
+  }
+}
+.debt-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-weight: 600;
+  strong {
+    font-size: 2.4rem;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .small {
+    color: var(--text-2);
+    font-weight: 500;
+  }
+  &.clear {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+}
+.wrap {
+  flex-wrap: wrap;
+}
+.end {
+  justify-content: flex-end;
+}
+.pay {
+  background: var(--surface-2);
+}
+.moves {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.center {
+  text-align: center;
+}
+.footer-left {
+  margin-right: auto;
+}

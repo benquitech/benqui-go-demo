@@ -1,0 +1,181 @@
+<div class="page">
+  <div class="page-head">
+    <h1>Ventas</h1>
+  </div>
+
+  <div class="card card-pad filters">
+    <div class="field">
+      <label for="from">Desde</label>
+      <input id="from" type="date" class="input" [ngModel]="from()" (ngModelChange)="setFrom($event)" />
+    </div>
+    <div class="field">
+      <label for="to">Hasta</label>
+      <input id="to" type="date" class="input" [ngModel]="to()" (ngModelChange)="setTo($event)" />
+    </div>
+    <div class="quick">
+      <button type="button" class="btn btn-sm" (click)="quick('today')">Hoy</button>
+      <button type="button" class="btn btn-sm" (click)="quick('yesterday')">Ayer</button>
+      <button type="button" class="btn btn-sm" (click)="quick('week')">7 días</button>
+    </div>
+    <div class="field grow">
+      <label for="q">Buscar</label>
+      <input id="q" type="search" class="input" placeholder="N° de venta, cliente o producto" [ngModel]="search()" (ngModelChange)="setSearch($event)" autocomplete="off" />
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="card stat">
+      <div class="stat-label">Ventas</div>
+      <div class="stat-value">{{ summary().count }}</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-label">Total vendido</div>
+      <div class="stat-value">{{ summary().amount | money }}</div>
+    </div>
+    <div class="card stat">
+      <div class="stat-label">Ticket promedio</div>
+      <div class="stat-value">{{ (summary().count ? summary().amount / summary().count : 0) | money }}</div>
+    </div>
+    @if (summary().voided) {
+      <div class="card stat">
+        <div class="stat-label">Anuladas</div>
+        <div class="stat-value danger-text">{{ summary().voided }}</div>
+      </div>
+    }
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Productos</th>
+            <th>Pago</th>
+            <th>Cliente</th>
+            <th class="right">Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of rows(); track s.id) {
+            <tr class="clickable" [class.voided]="s.status === 'VOIDED'" (click)="selected.set(s)">
+              <td class="num"><strong>{{ s.number }}</strong></td>
+              <td class="nowrap">{{ s.createdAt | date: 'dd/MM HH:mm' }}</td>
+              <td class="items">{{ itemsSummary(s) }}</td>
+              <td>{{ methods(s) }}</td>
+              <td>{{ s.customerName ?? '—' }}</td>
+              <td class="right num"><strong>{{ s.total | money }}</strong></td>
+              <td class="right">
+                @if (s.status === 'VOIDED') {
+                  <span class="chip chip-danger">Anulada</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="empty">
+                <div class="empty-icon">🧾</div>
+                {{ loading() ? 'Cargando…' : 'No hay ventas para este filtro.' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (pages() > 1) {
+      <div class="pager">
+        <span class="muted small">{{ total() }} ventas</span>
+        <button type="button" class="btn btn-sm" (click)="goTo(page() - 1)" [disabled]="page() <= 1">Anterior</button>
+        <span class="small">Página {{ page() }} de {{ pages() }}</span>
+        <button type="button" class="btn btn-sm" (click)="goTo(page() + 1)" [disabled]="page() >= pages()">Siguiente</button>
+      </div>
+    }
+  </div>
+</div>
+
+@if (selected(); as s) {
+  <app-modal [title]="'Venta #' + s.number" [width]="560" (closed)="selected.set(null)">
+    <div class="stack">
+      <div class="meta">
+        <span>{{ s.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        <span>· Atendió {{ s.userName }}</span>
+        @if (s.customerName) {
+          <span>· Cliente {{ s.customerName }}</span>
+        }
+        @if (s.status === 'VOIDED') {
+          <span class="chip chip-danger">Anulada</span>
+        }
+      </div>
+      @if (s.status === 'VOIDED') {
+        <div class="void-box">
+          Anulada el {{ s.voidedAt | date: 'dd/MM HH:mm' }}. Motivo: {{ s.voidReason }}
+        </div>
+      }
+
+      <table class="table detail">
+        <tbody>
+          @for (i of s.items; track i.id) {
+            <tr>
+              <td>
+                <strong>{{ i.description }}</strong>
+                <div class="muted small num">{{ i.quantity | qty: i.saleUnit }} × {{ i.unitPrice | money }}</div>
+              </td>
+              <td class="right num">{{ i.subtotal | money }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <div class="kv"><span>Subtotal</span><span class="num">{{ s.subtotal | money }}</span></div>
+        @if (s.discountAmount) {
+          <div class="kv"><span>Descuento</span><span class="num success-text">−{{ s.discountAmount | money }}</span></div>
+        }
+        @if (s.surchargeAmount) {
+          <div class="kv"><span>Recargo</span><span class="num">{{ s.surchargeAmount | money }}</span></div>
+        }
+        <div class="kv grand"><span>Total</span><strong class="num">{{ s.total | money }}</strong></div>
+      </div>
+
+      <div class="payments">
+        @for (p of s.payments; track p.id) {
+          <div class="kv">
+            <span>{{ p.methodName }}</span>
+            <span class="num">{{ p.amount + p.surchargeAmount | money }}</span>
+          </div>
+          @if (p.receivedAmount != null && p.changeAmount) {
+            <div class="kv muted small">
+              <span>Pagó con {{ p.receivedAmount | money }}</span><span class="num">Vuelto {{ p.changeAmount | money }}</span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+    <div modal-footer>
+      @if (auth.isAdmin() && s.status === 'COMPLETED') {
+        <button type="button" class="btn btn-danger" (click)="startVoid()"><app-icon name="trash" [size]="18" /> Anular</button>
+      }
+      <span class="grow"></span>
+      <button type="button" class="btn" (click)="print(s)"><app-icon name="printer" [size]="18" /> Reimprimir ticket</button>
+      <button type="button" class="btn btn-primary" (click)="selected.set(null)">Cerrar</button>
+    </div>
+  </app-modal>
+}
+
+@if (voiding() && selected(); as s) {
+  <app-modal [title]="'Anular venta #' + s.number" [width]="420" (closed)="voiding.set(false)">
+    <form id="void-form" class="stack" (ngSubmit)="confirmVoid()">
+      <p class="muted">Los productos vuelven al stock y, si fue fiado, se descuenta de la cuenta del cliente. No se puede deshacer.</p>
+      <div class="field">
+        <label for="reason">Motivo</label>
+        <input id="reason" name="reason" class="input" placeholder="Ej.: se cobró dos veces" [(ngModel)]="voidReason" autofocus autocomplete="off" />
+      </div>
+    </form>
+    <div modal-footer>
+      <button type="button" class="btn" (click)="voiding.set(false)">Volver</button>
+      <button type="submit" form="void-form" class="btn btn-danger" [disabled]="busy()">Anular venta</button>
+    </div>
+  </app-modal>
+}

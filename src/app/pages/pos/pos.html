@@ -1,0 +1,204 @@
+<section class="catalog">
+  <div class="searchbar" data-tour="search">
+    <app-icon name="barcode" [size]="22" class="lead" />
+    <input
+      #search
+      class="search"
+      type="search"
+      placeholder="Escaneá o buscá por nombre o código…"
+      aria-label="Buscar producto"
+      autocomplete="off"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+      (keydown.enter)="onEnter()"
+    />
+    <kbd class="hint">F4</kbd>
+    <button type="button" class="btn misc" (click)="openMisc()" title="Producto no cargado: tipeás el precio (F3)">
+      <app-icon name="plus" [size]="18" /> Varios <kbd>F3</kbd>
+    </button>
+  </div>
+
+  @if (!query()) {
+    <div class="tabs" role="tablist" aria-label="Categorías">
+      <button type="button" role="tab" class="tab" [class.active]="tab() === FAVORITES" (click)="tab.set(FAVORITES)" style="--c: #f59e0b">
+        <span>⭐</span> Favoritos
+      </button>
+      @for (c of catalog.activeCategories(); track c.id) {
+        <button type="button" role="tab" class="tab" [class.active]="tab() === c.id" (click)="tab.set(c.id)" [style.--c]="c.color">
+          <span>{{ c.icon }}</span> {{ c.name }}
+        </button>
+      }
+      <button type="button" role="tab" class="tab" [class.active]="tab() === ALL" (click)="tab.set(ALL)" style="--c: #64748b">Todos</button>
+    </div>
+  } @else {
+    <div class="results-head">
+      <span class="muted">{{ visible().length }} resultado{{ visible().length === 1 ? '' : 's' }} para “{{ query() }}”</span>
+      <span class="muted small">Enter agrega si hay uno solo · Esc limpia</span>
+    </div>
+  }
+
+  <div class="grid" data-tour="grid">
+    @for (p of visible(); track p.id) {
+      <button type="button" class="tile" (click)="pick(p)" [style.--c]="catalog.category(p.categoryId)?.color ?? '#94a3b8'">
+        <app-product-thumb [product]="p" [category]="catalog.category(p.categoryId)" [size]="64" />
+        <span class="name">{{ p.name }}</span>
+        <span class="price num">
+          @if (p.salePrice > 0) {
+            {{ p.salePrice | money }}{{ p.saleUnit === 'KG' ? ' /kg' : '' }}
+          } @else {
+            Precio libre
+          }
+        </span>
+        @if (p.trackStock && p.minStock != null && p.stock <= p.minStock) {
+          <span class="low" title="Stock bajo">{{ p.stock | qty: p.saleUnit }}</span>
+        }
+        @if (p.code) {
+          <span class="code">{{ p.code }}</span>
+        }
+      </button>
+    } @empty {
+      <div class="empty">
+        <div class="empty-icon">🔎</div>
+        @if (query()) {
+          No hay productos que coincidan. Podés agregarlo como <strong>Varios</strong> (F3).
+        } @else {
+          No hay productos en esta categoría todavía.
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<aside class="ticket" aria-label="Venta en curso">
+  <header class="ticket-head">
+    <div>
+      <h2>Venta</h2>
+      <span class="muted small">#{{ catalog.settings()?.nextSaleNumber }} · {{ cart.count() | qty }} ítem{{ cart.count() === 1 ? '' : 's' }}</span>
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="cancelSale()" [disabled]="cart.isEmpty()" title="Cancelar venta (F8)">
+      <app-icon name="trash" [size]="16" /> Cancelar
+    </button>
+  </header>
+
+  <div class="lines" data-tour="cart">
+    @for (l of cart.lines(); track l.key) {
+      <div class="line" [class.last]="cart.lastKey() === l.key">
+        <div class="line-info">
+          <span class="line-name">{{ l.name }}</span>
+          <span class="muted small num">{{ l.unitPrice | money }}{{ l.saleUnit === 'KG' ? ' /kg' : '' }}</span>
+        </div>
+        <div class="qty">
+          @if (l.saleUnit === 'UNIT') {
+            <button type="button" class="qbtn" (click)="step(l.key, -1)" aria-label="Uno menos"><app-icon name="minus" [size]="16" /></button>
+          }
+          <button type="button" class="qval num" (click)="openQty(l.key)" title="Cambiar cantidad">{{ l.quantity | qty: l.saleUnit }}</button>
+          @if (l.saleUnit === 'UNIT') {
+            <button type="button" class="qbtn" (click)="step(l.key, 1)" aria-label="Uno más"><app-icon name="plus" [size]="16" /></button>
+          }
+        </div>
+        <span class="line-total num">{{ lineTotal(l) | money }}</span>
+        <button type="button" class="remove" (click)="cart.remove(l.key)" [attr.aria-label]="'Quitar ' + l.name"><app-icon name="x" [size]="16" /></button>
+      </div>
+    } @empty {
+      <div class="cart-empty">
+        <app-icon name="barcode" [size]="44" [stroke]="1.5" />
+        <p>Escaneá un producto o tocá uno de la lista</p>
+        <p class="small">Tip: <strong>3*12</strong> + Enter agrega 3 del código 12</p>
+      </div>
+    }
+  </div>
+
+  <footer class="totals">
+    <div class="trow muted">
+      <span>Subtotal</span><span class="num">{{ cart.subtotal() | money }}</span>
+    </div>
+    <div class="trow">
+      <button type="button" class="link" (click)="openDiscount()" [disabled]="cart.isEmpty()">
+        <app-icon name="percent" [size]="14" /> {{ cart.discount() ? 'Descuento' : 'Agregar descuento' }}
+      </button>
+      @if (cart.discount()) {
+        <span class="num success-text">−{{ cart.discount() | money }}</span>
+      }
+    </div>
+    <div class="trow grand">
+      <span>Total</span><span class="num">{{ cart.total() | money }}</span>
+    </div>
+    <button type="button" class="btn btn-success charge" data-tour="charge" (click)="checkout()" [disabled]="cart.isEmpty() || cashRequired()">
+      <app-icon name="cash" [size]="24" /> Cobrar <kbd>F2</kbd>
+    </button>
+  </footer>
+
+  @if (cashRequired()) {
+    <div class="cash-closed">
+      <div class="cash-card" data-tour="cash-open" [class.flash]="flashCash()">
+        <span class="big-emoji">🔒</span>
+        <h2>La caja está cerrada</h2>
+        <p class="muted">Ingresá con cuánto cambio arrancás y empezá a vender.</p>
+        <form class="stack" (ngSubmit)="openCash()">
+          <input appNumber class="input input-lg input-money" name="opening" inputmode="decimal" placeholder="$ 0" [(ngModel)]="openingRaw" aria-label="Monto inicial" />
+          <button type="submit" class="btn btn-primary btn-lg">Abrir caja</button>
+        </form>
+      </div>
+    </div>
+  }
+</aside>
+
+@if (variable(); as v) {
+  <app-variable-item-modal [product]="v.product" (done)="onVariable($event)" (cancel)="closeModals()" />
+}
+
+@if (paying()) {
+  <app-payment-modal [total]="cart.total()" [busy]="busy()" (paid)="confirmPayment($event)" (cancel)="closeModals()" />
+}
+
+@if (discountOpen()) {
+  <app-modal title="Descuento" [width]="380" (closed)="closeModals()">
+    <form id="disc-form" class="stack" (ngSubmit)="saveDiscount()">
+      <div class="field">
+        <label for="disc">Importe o porcentaje</label>
+        <input appNumber allowPercent id="disc" name="disc" class="input input-lg input-money" [(ngModel)]="discountRaw" placeholder="500 o 10%" autofocus autocomplete="off" />
+        <span class="hint">Subtotal: {{ cart.subtotal() | money }}</span>
+      </div>
+    </form>
+    <div modal-footer>
+      <button type="button" class="btn" (click)="discountRaw = '0'; saveDiscount()">Quitar</button>
+      <button type="submit" form="disc-form" class="btn btn-primary">Aplicar</button>
+    </div>
+  </app-modal>
+}
+
+@if (editQty() != null) {
+  <app-modal title="Cantidad" [width]="340" (closed)="closeModals()">
+    <form id="qty-form" (ngSubmit)="saveQty()">
+      <input [appNumber]="editingUnit() === 'KG' ? 3 : 0" name="q" class="input input-lg input-money" inputmode="decimal" [(ngModel)]="qtyRaw" autofocus autocomplete="off" aria-label="Cantidad" />
+    </form>
+    <div modal-footer>
+      <button type="button" class="btn" (click)="closeModals()">Cancelar</button>
+      <button type="submit" form="qty-form" class="btn btn-primary">Aceptar</button>
+    </div>
+  </app-modal>
+}
+
+@if (lastSale(); as s) {
+  <app-modal title="¡Venta registrada!" [width]="420" (closed)="newSale()">
+    <div class="done">
+      <div class="done-check"><app-icon name="check" [size]="40" [stroke]="3" /></div>
+      <span class="muted">Venta #{{ s.number }}{{ s.customerName ? ' · Fiado a ' + s.customerName : '' }}</span>
+      <strong class="num done-total">{{ s.total | money }}</strong>
+      @for (p of s.payments; track p.id) {
+        @if (p.changeAmount) {
+          <div class="done-change">
+            <span>Vuelto</span>
+            <strong class="num">{{ p.changeAmount | money }}</strong>
+          </div>
+        }
+      }
+    </div>
+    <div modal-footer>
+      @if (catalog.settings()?.printTicket !== 'NEVER') {
+        <button type="button" class="btn" (click)="print(s)"><app-icon name="printer" [size]="18" /> Ticket</button>
+      }
+      <button type="button" class="btn btn-primary btn-lg" (click)="newSale()" autofocus>Nueva venta <kbd>Enter</kbd></button>
+    </div>
+  </app-modal>
+}

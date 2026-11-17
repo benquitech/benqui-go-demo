@@ -1,0 +1,156 @@
+<div class="page">
+  <div class="page-head">
+    <h1>Productos</h1>
+    @if (refEnabled) {
+      <a class="btn" data-tour="products-sepa" routerLink="/precios" title="Compará tus precios con los de los supermercados (SEPA)"><app-icon name="tag" [size]="18" /> Precios SEPA</a>
+    }
+    <button type="button" class="btn" (click)="exportCsv()" [disabled]="!rows().length"><app-icon name="download" [size]="18" /> Exportar</button>
+    @if (auth.isAdmin()) {
+      <button type="button" class="btn" data-tour="products-bulk" (click)="bulkOpen.set(true)"><app-icon name="percent" [size]="18" /> Actualizar precios</button>
+      <button type="button" class="btn btn-primary" data-tour="products-new" (click)="newProduct()"><app-icon name="plus" [size]="18" /> Nuevo producto</button>
+    }
+  </div>
+
+  @if (lowCount()) {
+    <button type="button" class="low-banner" (click)="onlyLow.set(!onlyLow())">
+      <app-icon name="alert" [size]="18" />
+      <span><strong>{{ lowCount() }}</strong> producto{{ lowCount() === 1 ? '' : 's' }} con stock bajo.</span>
+      <span class="grow"></span>
+      <span class="small">{{ onlyLow() ? 'Ver todos' : 'Ver cuáles' }}</span>
+    </button>
+  }
+
+  <div class="filters card card-pad">
+    <div class="search" data-tour="products-search">
+      <app-icon name="barcode" [size]="20" />
+      <input
+        class="input"
+        type="search"
+        placeholder="Buscá por nombre, código o escaneá"
+        aria-label="Buscar producto"
+        autocomplete="off"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+        (keydown.enter)="onEnter()"
+      />
+    </div>
+    <select class="input cat" [ngModel]="categoryId()" (ngModelChange)="categoryId.set($event)" aria-label="Categoría">
+      <option [ngValue]="null">Todas las categorías</option>
+      @for (c of catalog.categories(); track c.id) {
+        <option [ngValue]="c.id">{{ c.icon }} {{ c.name }}</option>
+      }
+    </select>
+    <label class="check"><input type="checkbox" [ngModel]="onlyLow()" (ngModelChange)="onlyLow.set($event)" /> Solo stock bajo</label>
+    <label class="check"><input type="checkbox" [ngModel]="showInactive()" (ngModelChange)="showInactive.set($event)" /> Ver inactivos</label>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th class="right">Precio</th>
+            @if (auth.isAdmin()) {
+              <th class="right">Costo</th>
+              <th class="right">Margen</th>
+            }
+            <th class="right">Stock</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of rows(); track p.id) {
+            <tr class="clickable" [class.inactive]="!p.isActive" (click)="open(p)">
+              <td>
+                <div class="prod">
+                  <app-product-thumb [product]="p" [category]="catalog.category(p.categoryId)" [size]="42" />
+                  <div class="prod-info">
+                    <span class="prod-name">
+                      @if (p.isFavorite) {
+                        <span class="fav" title="Favorito">★</span>
+                      }
+                      {{ p.name }}
+                      @if (!p.isActive) {
+                        <span class="chip">Inactivo</span>
+                      }
+                    </span>
+                    <span class="muted small codes">
+                      @if (p.code) {
+                        <span class="code">{{ p.code }}</span>
+                      }
+                      {{ p.barcode ?? '' }}
+                    </span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                @if (catalog.category(p.categoryId); as c) {
+                  <span class="chip cat-chip" [style.--c]="c.color">{{ c.icon }} {{ c.name }}</span>
+                } @else {
+                  <span class="muted small">—</span>
+                }
+              </td>
+              <td class="right num strong">
+                @if (p.salePrice > 0) {
+                  {{ p.salePrice | money }}{{ p.saleUnit === 'KG' ? ' /kg' : '' }}
+                } @else {
+                  <span class="muted small">Libre</span>
+                }
+              </td>
+              @if (auth.isAdmin()) {
+                <td class="right num muted">{{ p.costPrice | money }}</td>
+                <td class="right num">
+                  @if (margin(p); as m) {
+                    <span [class.danger-text]="m < 15">{{ m }}%</span>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+              }
+              <td class="right num">
+                @if (p.trackStock) {
+                  @if (isLow(p)) {
+                    <span class="chip chip-warn">{{ p.stock | qty: p.saleUnit }}</span>
+                  } @else {
+                    {{ p.stock | qty: p.saleUnit }}
+                  }
+                } @else {
+                  <span class="muted small">No controla</span>
+                }
+              </td>
+              <td class="right">
+                <button type="button" class="btn btn-sm" data-tour="products-stock" (click)="$event.stopPropagation(); stockOf.set(p)" title="Movimientos de stock">
+                  <app-icon name="boxes" [size]="16" /> Stock
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="auth.isAdmin() ? 7 : 5">
+                <div class="empty">
+                  <div class="empty-icon">📦</div>
+                  No hay productos con esos filtros.
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="muted small">{{ rows().length }} producto{{ rows().length === 1 ? '' : 's' }}</p>
+</div>
+
+@if (editing() !== undefined) {
+  <app-product-form-modal [product]="editing() ?? null" [initialBarcode]="pendingBarcode()" (saved)="afterSave()" (cancel)="editing.set(undefined)" />
+}
+
+@if (stockOf(); as p) {
+  <app-stock-modal [product]="p" (closed)="stockOf.set(null)" />
+}
+
+@if (bulkOpen()) {
+  <app-bulk-price-modal (closed)="bulkOpen.set(false)" (applied)="bulkOpen.set(false); catalog.reloadProducts()" />
+}

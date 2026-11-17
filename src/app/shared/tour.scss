@@ -1,0 +1,159 @@
+// Por encima de los modales (50) y debajo de los avisos (1000).
+.shade {
+  position: fixed;
+  z-index: 900;
+  background: rgba(8, 13, 20, 0.74);
+  transition: all 0.25s ease;
+  &.full {
+    inset: 0;
+    animation: fade 0.25s ease-out;
+  }
+}
+
+.ring {
+  position: fixed;
+  z-index: 901;
+  pointer-events: none;
+  border-radius: 14px;
+  border: 2px solid var(--cyan);
+  box-shadow:
+    0 0 0 4px rgba(0, 212, 255, 0.25),
+    0 0 24px rgba(0, 212, 255, 0.45);
+  transition: all 0.25s ease;
+  animation: ring 1.6s ease-in-out infinite;
+}
+
+.card-tour {
+  position: fixed;
+  z-index: 902;
+  width: min(340px, calc(100vw - 32px));
+  padding: 18px 18px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  border-top: 4px solid var(--cyan);
+  transition:
+    top 0.25s ease,
+    left 0.25s ease;
+  animation: pop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  &.center {
+    width: min(420px, calc(100vw - 32px));
+    text-align: center;
+    padding: 26px 24px 18px;
+    .actions {
+      justify-content: center;
+    }
+    .dots {
+      justify-content: center;
+    }
+  }
+  h2 {
+    margin: 2px 0 6px;
+  }
+  p {
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+}
+
+.emoji {
+  font-size: 2.6rem;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+}
+
+.dots {
+  display: flex;
+  gap: 5px;
+  margin: 14px 0 12px;
+  span {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--line-strong);
+    transition: all 0.2s;
+    &.on {
+      width: 20px;
+      background: var(--primary);
+    }
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.skip {
+  margin-right: auto;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  &:hover {
+    color: var(--text);
+    text-decoration: underline;
+  }
+}
+.center .skip {
+  margin-right: 8px;
+}
+.waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+@keyframes ring {
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(0, 212, 255, 0.12),
+      0 0 32px rgba(0, 212, 255, 0.55);
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .pulse {
+    animation: none;
+  }
+}

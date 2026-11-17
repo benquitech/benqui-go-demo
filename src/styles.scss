@@ -1,0 +1,474 @@
+// Benqui Go: identidad de benqui-web (navy + cyan, hexágono) adaptada a un punto de venta.
+// Menú oscuro con la marca; área de trabajo clara (se lee mejor con la luz de un local);
+// verde fuerte reservado para "Cobrar". Todo pensado para mouse, teclado, lector y pantalla táctil.
+
+:root {
+  color-scheme: light;
+  --navy-950: #080d14;
+  --navy-900: #0d1522;
+  --navy-800: #111c2e;
+  --navy-700: #1c2a40;
+  --cyan: #00d4ff; // acento de marca (sobre fondo oscuro)
+  --primary: #0e7490; // acción principal sobre fondo claro (contraste 5,4:1 con blanco)
+  --primary-hover: #155e75;
+  --primary-soft: #e3f6fb;
+  --success: #15803d;
+  --success-hover: #166534;
+  --success-soft: #dcfce7;
+  --warn: #b45309;
+  --warn-soft: #fef3c7;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --text: #0f172a;
+  --text-2: #334155;
+  --muted: #64748b;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 50px -12px rgba(8, 13, 20, 0.35);
+  --rail-w: 84px;
+  --font: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-size: 1.5rem;
+}
+h2 {
+  font-size: 1.15rem;
+}
+h3 {
+  font-size: 1rem;
+}
+p {
+  margin: 0;
+}
+a {
+  color: var(--primary);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 0.85rem;
+}
+.danger-text {
+  color: var(--danger);
+}
+.success-text {
+  color: var(--success);
+}
+.grow {
+  flex: 1;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+// ---------- Página ----------
+.page {
+  padding: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  h1 {
+    margin-right: auto;
+  }
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.card-pad {
+  padding: 16px;
+}
+
+// ---------- Botones ----------
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.08s;
+  &:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: var(--muted);
+  }
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--primary) 40%, transparent);
+    outline-offset: 1px;
+  }
+}
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+}
+.btn-success {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: var(--success-hover);
+    border-color: var(--success-hover);
+  }
+}
+.btn-danger {
+  color: var(--danger);
+  &:hover:not(:disabled) {
+    background: var(--danger-soft);
+    border-color: var(--danger);
+  }
+}
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  &:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: transparent;
+  }
+}
+.btn-sm {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.875rem;
+}
+.btn-lg {
+  min-height: 52px;
+  padding: 0 22px;
+  font-size: 1.05rem;
+}
+.btn-icon {
+  padding: 0;
+  width: 40px;
+  &.btn-sm {
+    width: 32px;
+  }
+}
+
+// ---------- Formularios ----------
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  label,
+  .label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+}
+.input,
+select.input,
+textarea.input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+  &::placeholder {
+    color: #94a3b8;
+  }
+}
+.input-lg {
+  min-height: 52px;
+  font-size: 1.1rem;
+}
+.input-money {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+  }
+}
+
+// Selector segmentado (Persona/Empresa, Unidad/Kilo, etc.)
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  button {
+    border: 0;
+    background: transparent;
+    padding: 6px 14px;
+    border-radius: 7px;
+    font: inherit;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    &.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+  }
+}
+
+// ---------- Tablas ----------
+.table-wrap {
+  overflow-x: auto;
+}
+table.table {
+  width: 100%;
+  border-collapse: collapse;
+  th,
+  td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    font-weight: 650;
+    background: var(--surface-2);
+  }
+  tbody tr:hover {
+    background: var(--surface-2);
+  }
+  tr.clickable {
+    cursor: pointer;
+  }
+  .right {
+    text-align: right;
+  }
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+// ---------- Chips y estados ----------
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.chip-success {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: transparent;
+}
+.chip-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-color: transparent;
+}
+.chip-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: transparent;
+}
+.chip-primary {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: transparent;
+}
+
+.empty {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--muted);
+  .empty-icon {
+    font-size: 2.2rem;
+    margin-bottom: 6px;
+  }
+}
+
+// Indicadores (tarjetas de números)
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.stat {
+  padding: 14px 16px;
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+}
+
+// ---------- Impresión de ticket ----------
+// Solo se imprime #print-area (el ticket); el resto de la app se oculta.
+#print-area {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 0;
+  }
+  body {
+    background: #fff;
+  }
+  body.printing > *:not(#print-area) {
+    display: none !important;
+  }
+  body.printing #print-area {
+    display: block;
+  }
+}
+
+// Campo que falta completar (lo marca shared/invalid.ts al intentar guardar).
+.input.invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
+  animation: shake 0.35s ease-in-out;
+}
+@keyframes shake {
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .input.invalid {
+    animation: none;
+  }
+}
